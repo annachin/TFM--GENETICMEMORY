@@ -7,4 +7,5 @@ Master's Thesis Processing Code
 # TFM RECEIVE OSC - Receiving osc messages of kinect and .csv hand coordinates. sends to unreal locally
 # TFM KINECT CSV OSC COMBINED - One osc messages with all the coordinates from Kinect and .csv files
 # TFM KINECT CSV NEW- landmark visualizer class, test coordinates and combined kinect and csv code // TFM--GENETICMEMORY-main
+# TFM KINECT CSV oscSeparated - sends an osc message for each coordinate (CSVHandLeftX, CSVHandLeftY, ...)
 
