@@ -1,3 +1,6 @@
+//Receiving all the data
+//When printing the message we see the entire message but in Unreal values are 0 after Splitting -> map range clamped -> new world location
+
 import KinectPV2.*;
 import KinectPV2.KJoint;
 
