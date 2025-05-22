@@ -1,3 +1,6 @@
+//Sends OSC combined to work with Unreal reading 12 indexes
+//We have CSV Landmarks and Kinect Landmarks disappearing
+
 import KinectPV2.*;
 import KinectPV2.KJoint;
 
