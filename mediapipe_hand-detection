@@ -1,0 +1,87 @@
+import cv2
+import mediapipe as mp
+import pandas as pd
+
+# Initialize MediaPipe Holistic
+mp_drawing = mp.solutions.drawing_utils
+mp_holistic = mp.solutions.holistic
+
+# Start the Holistic model
+holistic = mp_holistic.Holistic(
+    static_image_mode=False,
+    model_complexity=1,
+    smooth_landmarks=True,
+    enable_segmentation=False,
+    refine_face_landmarks=False,
+    min_detection_confidence=0.5,
+    min_tracking_confidence=0.5
+)
+
+# Open video
+video_path = 'add/video/path/here.mov'
+cap = cv2.VideoCapture(video_path)
+if not cap.isOpened():
+    print("❌ Error: Could not open video.")
+
+frame_count = 0
+left_hand_data = []
+right_hand_data = []
+
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    frame_count += 1
+    print(f"Processing frame: {frame_count}")
+
+    # Convert BGR to RGB
+    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    results = holistic.process(rgb_frame)
+    print(f"Left hand detected: {results.left_hand_landmarks is not None}")
+    print(f"Right hand detected: {results.right_hand_landmarks is not None}")
+
+    # Get image size for scaling
+    height, width, _ = frame.shape
+
+    # Process left hand landmarks
+    if results.left_hand_landmarks:
+        wrist = results.left_hand_landmarks.landmark[0]
+        left_hand_data.append({
+            'x': f"{wrist.x * width:.5f}",
+            'y': f"{wrist.y * height:.5f}",
+            'z': f"{wrist.z * width:.5f}"
+        })
+        # Draw left hand landmarks
+        mp_drawing.draw_landmarks(frame, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
+    else:
+        left_hand_data.append({'x': 0, 'y': 0, 'z': 0})
+
+    # Process right hand landmarks
+    if results.right_hand_landmarks:
+        wrist = results.right_hand_landmarks.landmark[0]
+        right_hand_data.append({
+            'x': f"{wrist.x * width:.5f}",
+            'y': f"{wrist.y * height:.5f}",
+            'z': f"{wrist.z * width:.5f}"
+        })
+        # Draw right hand landmarks
+        mp_drawing.draw_landmarks(frame, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
+    else:
+        right_hand_data.append({'x': 0, 'y': 0, 'z': 0})
+
+    # Show the frame with drawn landmarks
+    cv2.imshow('Hand Detection', frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+# Release resources
+cap.release()
+cv2.destroyAllWindows()
+holistic.close()
+
+# Save to CSV files
+pd.DataFrame(left_hand_data).to_csv('afro-carib-left_XYZ.csv', index=False)
+pd.DataFrame(right_hand_data).to_csv('afro-carib-right_XYZ.csv', index=False)
+
+print("✅ CSV files created and visualization complete.")
