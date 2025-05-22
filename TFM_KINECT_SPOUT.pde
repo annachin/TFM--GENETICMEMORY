@@ -12,7 +12,7 @@ float leftHandKinectX, leftHandKinectY, leftHandKinectZ;
 float rightHandKinectX, rightHandKinectY, rightHandKinectZ;
 
 void setup() {
-  size(1280, 720, P3D);
+  size(1920, 1080,P2D);
   background(0);
 
   // OSC Setup
@@ -31,21 +31,21 @@ void draw() {
 
   // Translate and draw landmarks
   pushMatrix();
-  translate(width/2, height/2, -500); // Center and move back for better 3D view
-  drawHand(leftHandKinectX, leftHandKinectY, leftHandKinectZ, color(0, 255, 0));   // Green = Left
-  drawHand(rightHandKinectX, rightHandKinectY, rightHandKinectZ, color(255, 0, 0)); // Red = Right
+  //translate(width/2, height/2, -500); // Center and move back for better 3D view
+  drawHand(leftHandKinectX, leftHandKinectY, color(0, 255, 0));   // Green = Left
+  drawHand(rightHandKinectX, rightHandKinectY, color(255, 0, 0)); // Red = Right
   popMatrix();
 
   // Send this frame to Spout
   spout.sendTexture();
 }
 
-void drawHand(float x, float y, float z, int c) {
+void drawHand(float x, float y, int c) {
   pushMatrix();
-  translate(x, y, z);
-  fill(c);
-  noStroke();
-  sphere(20);
+  noFill();
+  stroke(c);
+  strokeWeight(5);
+  point(x, y);
   popMatrix();
 }
 
