@@ -158,12 +158,12 @@ void loadData() {
     TableRow rowL = leftHand.getRow(i);
     TableRow rowR = rightHand.getRow(i);
 
-    float xL = rowL.getFloat("x");
-    float yL = rowL.getFloat("y");
-    float zL = map(rowL.getFloat("z"), -1, 1, -200000, 200000);
-    float xR = rowR.getFloat("x");
-    float yR = rowR.getFloat("y");
-    float zR = map(rowR.getFloat("z"), -1, 1, -200000, 200000);
+    float xL = map(rowL.getFloat("x"), -100, 2000, 0, 1920);
+    float yL = map(rowL.getFloat("y"), -100, 1200, 0, 1080);
+    float zL = map(rowL.getFloat("z"), -1, 1,0, 200000);
+    float xR = map(rowR.getFloat("x"), -100, 2000, 0, 1920);
+    float yR = map(rowR.getFloat("y"), -100, 1200, 0, 1080);
+    float zR = map(rowR.getFloat("z"), -1, 1, 0, 200000);
 
     // Fix missing hand data
     if (xL == 0 && yL == 0 && zL == 0) {
