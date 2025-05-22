@@ -1,3 +1,7 @@
+//kinect hand detection range. tbd in final space
+//x: 100, 2000
+//y: 100, 1100
+
 import KinectPV2.KJoint;
 import KinectPV2.*;
 
@@ -14,12 +18,9 @@ OscP5 oscP5;
 OscMessage myMessage;
 NetAddress myRemoteLocation;
 
-String IPcomp = "192.168.0.112";
+String IPcomp = "localhost";
 
 float radius, rightPosY, leftPosY;
-
-Table leftHand;
-//frame,landmark_index,x,y,z
 
 
 void setup() {
@@ -34,9 +35,8 @@ void setup() {
 
   radius = 10;
 
-  //loadData();
   oscP5 = new OscP5(this, 11111);
-  myRemoteLocation = new NetAddress(IPcomp, 8000);
+  myRemoteLocation = new NetAddress(IPcomp, 8007);
   
   rightPosY = 0;
   leftPosY = 0;
@@ -44,6 +44,7 @@ void setup() {
 
 void draw() {
   //background(0);
+  frameRate(30);
   noStroke();
   fill(0, 0, 0, 10);
   rect(0, 0, 1920, 1080);
@@ -88,7 +89,16 @@ void draw() {
   }
   
   fill(255, 0, 0);
-  text(frameRate, 50, 50);
+  textSize(50); 
+  //text(frameRate, 50, 50); 
+  if (leftHandJoint != null) {
+    text("left X: " + leftHandJoint.getX(), 50, 300);
+    text("left Y: " + leftHandJoint.getY(), 50, 400);
+  }
+  if (rightHandJoint != null) {
+    text("right X: " + rightHandJoint.getX(), 50, 500);
+    text("right Y: " + rightHandJoint.getY(), 50, 600);
+  }
   myMessage = new OscMessage("/handsControl");
   myMessage.add(rightPosY);
   myMessage.add(leftPosY);
