@@ -100,7 +100,7 @@ void draw() {
 }
 
 void sendCombinedOSC(Landmark current) {
-  // Format values to 3 decimal places as string-floats (Unreal-safe)
+  // Send CSV hand data (already mapped)
   sendFloatOSC("/CSVHandLeftX", current.xLeft);
   sendFloatOSC("/CSVHandLeftY", current.yLeft);
   sendFloatOSC("/CSVHandLeftZ", current.zLeft);
@@ -109,29 +109,44 @@ void sendCombinedOSC(Landmark current) {
   sendFloatOSC("/CSVHandRightY", current.yRight);
   sendFloatOSC("/CSVHandRightZ", current.zRight);
 
+  // Left Hand Kinect
+  float leftX = 0;
+  float leftY = 0;
+  float leftZ = 5000;
+
   if (leftHandJoint != null) {
-    sendFloatOSC("/KinectHandLeftX", leftHandJoint.getX());
-    sendFloatOSC("/KinectHandLeftY", leftHandJoint.getY());
-    float zKinectMappedLeft = map(leftHandJoint.getZ(), 0, 500, 0, 20);
-    sendFloatOSC("/KinectHandLeftZ", zKinectMappedLeft);
+    leftX = leftHandJoint.getX();
+    leftY = leftHandJoint.getY();
+    leftZ = map(leftHandJoint.getZ(), 0, 500, 0, 20);
   }
 
+  sendFloatOSC("/KinectHandLeftX", leftX);
+  sendFloatOSC("/KinectHandLeftY", leftY);
+  sendFloatOSC("/KinectHandLeftZ", leftZ);
+
+  // Right Hand Kinect
+  float rightX = 0;
+  float rightY = 0;
+  float rightZ = 5000;
+
   if (rightHandJoint != null) {
-    sendFloatOSC("/KinectHandRightX", rightHandJoint.getX());
-    sendFloatOSC("/KinectHandRightY", rightHandJoint.getY());
-    float zKinectMappedRight = map(rightHandJoint.getZ(), 0, 500, 0, 20);
-    sendFloatOSC("/KinectHandRightZ", zKinectMappedRight);
+    rightX = rightHandJoint.getX();
+    rightY = rightHandJoint.getY();
+    rightZ = map(rightHandJoint.getZ(), 0, 500, 0, 20);
   }
+
+  sendFloatOSC("/KinectHandRightX", rightX);
+  sendFloatOSC("/KinectHandRightY", rightY);
+  sendFloatOSC("/KinectHandRightZ", rightZ);
 
   println("...................");
   println("sending:");
   println("CSV L: " + current.xLeft + ", " + current.yLeft + ", " + current.zLeft);
   println("CSV R: " + current.xRight + ", " + current.yRight + ", " + current.zRight);
-  if (leftHandJoint != null && rightHandJoint != null) {
-    println("Kinect L: " + leftHandJoint.getX() + ", " + leftHandJoint.getY() + ", " + leftHandJoint.getZ());
-    println("Kinect R: " + rightHandJoint.getX() + ", " + rightHandJoint.getY() + ", " + rightHandJoint.getZ());
-  }
+  println("Kinect L: " + leftX + ", " + leftY + ", " + leftZ);
+  println("Kinect R: " + rightX + ", " + rightY + ", " + rightZ);
 }
+
 
 void sendFloatOSC(String address, float val) {
   // Prevent sending NaN or undefined values
