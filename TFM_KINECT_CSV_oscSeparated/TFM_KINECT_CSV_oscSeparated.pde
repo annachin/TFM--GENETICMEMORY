@@ -1,6 +1,6 @@
-//Receiving all the data
-//When printing the message we see the entire message but in Unreal values are 0 after Splitting -> map range clamped -> new world location
-
+//draws points in a 3d space according to coordinates
+//landmarks are from the hand detection of dance videos
+//real time interaction is with kinect hand detection
 import KinectPV2.*;
 import KinectPV2.KJoint;
 
@@ -23,9 +23,8 @@ KJoint rightHandJoint, leftHandJoint;
 
 // OSC variables
 OscP5 oscP5;
-OscMessage myMessage;
 NetAddress myRemoteLocation;
-String IPcomp = "192.168.0.100";  // target IP
+String IPcomp = "192.168.0.2";  // target IP
 
 void setup() {
   size(1920, 1080, P3D);
@@ -33,7 +32,7 @@ void setup() {
 
   // Init OSC
   oscP5 = new OscP5(this, 8007);
-  myRemoteLocation = new NetAddress(IPcomp, 8005);
+  myRemoteLocation = new NetAddress(IPcomp, 11112);
 
   // Load CSV data
   loadData();
@@ -47,9 +46,8 @@ void setup() {
 
 void draw() {
   background(0);
-  //camera(0, -700, 1500, 960, 540, 0, 0, 1, 0);
 
-  // --- CSV Landmark Playback ---
+  // CSV Landmark Playback
   for (int i = 0; i < numVisible && i < landmarks.length; i++) {
     landmarks[i].updateLife();
     landmarks[i].displayLandmarks();
@@ -73,15 +71,19 @@ void draw() {
     }
   }
 
-  // Optional: 3D bounding box
+  //3D box
   pushMatrix();
   translate(960, 540, 0);
   stroke(255);
   strokeWeight(1);
   box(1000);
   popMatrix();
+  
+  //reset hanf joints
+  leftHandJoint = null;
+  rightHandJoint = null;
 
-  // --- Kinect Realtime Hand Tracking ---
+  // Kinect Hand Tracking
   ArrayList<KSkeleton> skeletonArray = kinect.getSkeletonColorMap();
   for (int i = 0; i < skeletonArray.size(); i++) {
     KSkeleton skeleton = (KSkeleton) skeletonArray.get(i);
@@ -89,60 +91,57 @@ void draw() {
       KJoint[] joints = skeleton.getJoints();
       rightHandJoint = joints[KinectPV2.JointType_HandRight];
       leftHandJoint = joints[KinectPV2.JointType_HandLeft];
-      break; // Only use first tracked skeleton
+      break;
     }
   }
-  if (leftHandJoint != null) {
-    drawHandSphere(leftHandJoint);
-  }
 
-  if (rightHandJoint != null) {
-    drawHandSphere(rightHandJoint);
-  }
-
-}//end draw
-
-// --- Send one OSC message combining CSV and Kinect data ---
-void sendCombinedOSC(Landmark current) {
-  // Send CSV left hand
-  sendSingleOSC("/CSVHandLeftX", current.xLeft);
-  sendSingleOSC("/CSVHandLeftY", current.yLeft);
-  sendSingleOSC("/CSVHandLeftZ", current.zLeft);
-
-  // Send CSV right hand
-  sendSingleOSC("/CSVHandRightX", current.xRight);
-  sendSingleOSC("/CSVHandRightY", current.yRight);
-  sendSingleOSC("/CSVHandRightZ", current.zRight);
-
-  // Send Kinect left hand
-  if (leftHandJoint != null) {
-    sendSingleOSC("/KinectHandLeftX", leftHandJoint.getX());
-    sendSingleOSC("/KinectHandLeftY", leftHandJoint.getY());
-    sendSingleOSC("/KinectHandLeftZ", leftHandJoint.getZ());
-  } else {
-    sendSingleOSC("/KinectHandLeftX", 0);
-    sendSingleOSC("/KinectHandLeftY", 0);
-    sendSingleOSC("/KinectHandLeftZ", 0);
-  }
-
-  // Send Kinect right hand
-  if (rightHandJoint != null) {
-    sendSingleOSC("/KinectHandRightX", rightHandJoint.getX());
-    sendSingleOSC("/KinectHandRightY", rightHandJoint.getY());
-    sendSingleOSC("/KinectHandRightZ", rightHandJoint.getZ());
-  } else {
-    sendSingleOSC("/KinectHandRightX", 0);
-    sendSingleOSC("/KinectHandRightY", 0);
-    sendSingleOSC("/KinectHandRightZ", 0);
-  }
-
-  // Debug print
-  println("Sent individual OSC messages for each coordinate.");
+  if (leftHandJoint != null) drawHandSphere(leftHandJoint);
+  if (rightHandJoint != null) drawHandSphere(rightHandJoint);
 }
 
-void sendSingleOSC(String address, float value) {
+void sendCombinedOSC(Landmark current) {
+  // Format values to 3 decimal places as string-floats (Unreal-safe)
+  sendFloatOSC("/CSVHandLeftX", current.xLeft);
+  sendFloatOSC("/CSVHandLeftY", current.yLeft);
+  sendFloatOSC("/CSVHandLeftZ", current.zLeft);
+
+  sendFloatOSC("/CSVHandRightX", current.xRight);
+  sendFloatOSC("/CSVHandRightY", current.yRight);
+  sendFloatOSC("/CSVHandRightZ", current.zRight);
+
+  if (leftHandJoint != null) {
+    sendFloatOSC("/KinectHandLeftX", leftHandJoint.getX());
+    sendFloatOSC("/KinectHandLeftY", leftHandJoint.getY());
+    float zKinectMappedLeft = map(leftHandJoint.getZ(), 0, 500, 0, 20);
+    sendFloatOSC("/KinectHandLeftZ", zKinectMappedLeft);
+  }
+
+  if (rightHandJoint != null) {
+    sendFloatOSC("/KinectHandRightX", rightHandJoint.getX());
+    sendFloatOSC("/KinectHandRightY", rightHandJoint.getY());
+    float zKinectMappedRight = map(rightHandJoint.getZ(), 0, 500, 0, 20);
+    sendFloatOSC("/KinectHandRightZ", zKinectMappedRight);
+  }
+
+  println("...................");
+  println("sending:");
+  println("CSV L: " + current.xLeft + ", " + current.yLeft + ", " + current.zLeft);
+  println("CSV R: " + current.xRight + ", " + current.yRight + ", " + current.zRight);
+  if (leftHandJoint != null && rightHandJoint != null) {
+    println("Kinect L: " + leftHandJoint.getX() + ", " + leftHandJoint.getY() + ", " + leftHandJoint.getZ());
+    println("Kinect R: " + rightHandJoint.getX() + ", " + rightHandJoint.getY() + ", " + rightHandJoint.getZ());
+  }
+}
+
+void sendFloatOSC(String address, float val) {
+  // Prevent sending NaN or undefined values
+  if (Float.isNaN(val) || Float.isInfinite(val)) val = 0;
+
+  // Format to 3 decimal places
+  val = Float.parseFloat(nf(val, 1, 3));  
+
   OscMessage msg = new OscMessage(address);
-  msg.add(value);
+  msg.add(val);
   oscP5.send(msg, myRemoteLocation);
 }
 
@@ -158,14 +157,14 @@ void loadData() {
     TableRow rowL = leftHand.getRow(i);
     TableRow rowR = rightHand.getRow(i);
 
-    float xL = map(rowL.getFloat("x"), -100, 2000, 0, 1920);
-    float yL = map(rowL.getFloat("y"), -100, 1200, 0, 1080);
-    float zL = map(rowL.getFloat("z"), -1, 1,0, 200000);
-    float xR = map(rowR.getFloat("x"), -100, 2000, 0, 1920);
-    float yR = map(rowR.getFloat("y"), -100, 1200, 0, 1080);
-    float zR = map(rowR.getFloat("z"), -1, 1, 0, 200000);
+    float xL = rowL.getFloat("x");
+    float yL = rowL.getFloat("y");
+    float zL = map(rowL.getFloat("z"), -1, 1, 0, 20);
+    float xR = rowR.getFloat("x");
+    float yR = rowR.getFloat("y");
+    float zR = map(rowR.getFloat("z"), -1, 1, 0, 20);
 
-    // Fix missing hand data
+    // Smooth missing data
     if (xL == 0 && yL == 0 && zL == 0) {
       xL = lastXL;
       yL = lastYL;
