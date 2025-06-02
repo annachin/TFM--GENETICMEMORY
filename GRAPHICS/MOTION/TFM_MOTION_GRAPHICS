@@ -1,0 +1,99 @@
+Table leftHand, rightHand;
+Landmark[] landmarks;
+
+// CSV playback variables
+int numVisible = 0;
+int pointInterval = 30;
+int lastPointTime = 0;
+float lastXL = 0, lastYL = 0, lastZL = 0;
+float lastXR = 0, lastYR = 0, lastZR = 0;
+
+PFont CSLionaMono;
+
+void setup() {
+  size(1920, 1080, P3D);
+  background(0);
+  //frameRate(30);
+  
+  CSLionaMono = loadFont("CSLionaMono-Regular-48.vlw");
+  textFont(CSLionaMono);
+
+  // Load CSV data
+  loadData();
+
+}
+
+void draw() {
+    background(0);
+  fill(255, 0, 0);
+  //textSize(50);
+  //text(frameCount, 100, 100);
+  //text("CSV row: " + numVisible, 100, 160);
+
+  int now = millis();
+  if (now - lastPointTime > pointInterval) {
+    if (numVisible < landmarks.length) {
+      numVisible++;
+    } else {
+      numVisible = 0;
+    }
+
+  }
+
+  // Draw lines for left and right hand
+  strokeWeight(2);
+  noFill();
+
+  // Left hand
+  stroke(255);
+  strokeWeight(2);
+  beginShape();
+  int start = max(0, numVisible - 100);
+  for (int i = start; i < numVisible; i++) {
+    vertex(landmarks[i].xLeft, landmarks[i].yLeft, landmarks[i].zLeft);
+  }
+  endShape();
+
+  // Right hand
+  stroke(255);
+  strokeWeight(8);
+  beginShape();
+  for (int i = start; i < numVisible; i++) {
+    vertex(landmarks[i].xRight, landmarks[i].yRight, landmarks[i].zRight);
+  }
+  endShape();
+  
+}//end draw
+
+
+// --- Load CSV hand data ---
+void loadData() {
+  leftHand = loadTable("dancers-edit-june-2-left_XYZ.csv", "header");
+  rightHand = loadTable("dancers-edit-june-2-right_XYZ.csv", "header");
+
+  ArrayList<Landmark> validLandmarks = new ArrayList<Landmark>();
+
+  int rowCount = min(leftHand.getRowCount(), rightHand.getRowCount());
+  for (int i = 0; i < rowCount; i++) {
+    TableRow rowL = leftHand.getRow(i);
+    TableRow rowR = rightHand.getRow(i);
+
+    float xL = rowL.getFloat("x");
+    float yL = rowL.getFloat("y");
+    float zL = rowL.getFloat("z");
+
+    float xR = rowR.getFloat("x");
+    float yR = rowR.getFloat("y");
+    float zR = rowR.getFloat("z");
+
+    // Skip if either left or right hand is at origin
+    boolean leftZero = (xL == 0 && yL == 0 && zL == 0);
+    boolean rightZero = (xR == 0 && yR == 0 && zR == 0);
+
+    if (!leftZero && !rightZero) {
+      validLandmarks.add(new Landmark(xL, yL, zL, xR, yR, zR));
+    }
+  }
+
+  landmarks = validLandmarks.toArray(new Landmark[0]);
+}
