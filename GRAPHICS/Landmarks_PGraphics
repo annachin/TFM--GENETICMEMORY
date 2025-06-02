@@ -1,0 +1,41 @@
+class Landmark {
+  float xLeft, xRight, yLeft, yRight, zLeft, zRight;
+  float diameter = 6.5;
+  float life = 255;
+
+  Landmark(float xL, float yL, float zL, float xR, float yR, float zR) {
+    xLeft = xL;
+    yLeft = yL;
+    zLeft = zL;
+    xRight = xR;
+    yRight = yR;
+    zRight = zR;
+  }
+
+  void displayLandmarksLeft(PGraphics pg) {
+    if (life <= 0) return;
+
+    pg.pushMatrix();
+    pg.translate(xLeft, yLeft, zLeft);
+    pg.fill(0);
+    pg.stroke(0);
+    pg.strokeWeight(2);
+    pg.text(nf(xLeft, 1, 2), 0, 0);
+    pg.text(nf(yLeft, 1, 2), 100, 0);
+    pg.text(nf(zLeft, 1, 2), 0, 20);
+    pg.circle(0, 0, 5);
+    pg.popMatrix();
+  }
+
+  void displayLandmarksRight(PGraphics pg) {
+    if (life <= 0) return;
+
+    pg.pushMatrix();
+    pg.translate(xRight, yRight, zRight);
+    pg.noFill();
+    pg.stroke(0, 255);
+    pg.strokeWeight(4);
+    pg.circle(0, 0, 10);
+    pg.popMatrix();
+  }
+}
