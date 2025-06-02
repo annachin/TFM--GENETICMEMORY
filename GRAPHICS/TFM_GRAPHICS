@@ -1,0 +1,99 @@
+Table leftHand, rightHand;
+Landmark[] landmarks;
+
+PGraphics pg;
+boolean saved = false;
+
+// CSV playback variables
+int numVisible = 0;
+int pointInterval = 10; //framerate
+int lastPointTime = 0;
+float lastXL = 0, lastYL = 0, lastZL = 0;
+float lastXR = 0, lastYR = 0, lastZR = 0;
+
+int outputWidth = 3840;
+int outputHeight = 2160;
+
+PFont CSLionaMono;
+
+void setup() {
+  size(500, 500, P3D); // Preview size
+  loadData();
+
+  CSLionaMono = loadFont("CSLionaMono-Regular-48.vlw");
+  textFont(CSLionaMono);
+  // Create 4K offscreen graphics buffer
+  pg = createGraphics(outputWidth, outputHeight, P3D);
+}
+
+void draw() {
+  if (saved) return; // Save only once
+
+  pg.beginDraw();
+  pg.background(255, 0);
+  pg.fill(255, 0, 0);
+  pg.camera(outputWidth/2, outputHeight/2, 2000, outputWidth/2, outputHeight/2, 0, 0, 1, 0);
+  pg.textSize(20);
+
+   // Draw left hand path
+   pg.stroke(0, 0, 255);
+   pg.strokeWeight(5);
+   for (int i = 4038; i < 8606; i++) {
+     Landmark prev = landmarks[i - 1];
+     Landmark curr = landmarks[i];
+
+     if (prev.xLeft != 0 && prev.yLeft != 0 && prev.zLeft != 0 &&
+         curr.xLeft != 0 && curr.yLeft != 0 && curr.zLeft != 0) {
+       pg.line(prev.xLeft, prev.yLeft, prev.zLeft, curr.xLeft, curr.yLeft, curr.zLeft);
+     }
+   }
+
+  // Draw right hand path
+   pg.stroke(255, 0, 0);
+   pg.strokeWeight(5);
+   for (int i = 4038; i < 8606; i++) {
+     Landmark prev = landmarks[i - 1];
+     Landmark curr = landmarks[i];
+
+     if (prev.xRight != 0 && prev.yRight != 0 && prev.zRight != 0 &&
+         curr.xRight != 0 && curr.yRight != 0 && curr.zRight != 0) {
+       pg.line(prev.xRight, prev.yRight, prev.zRight, curr.xRight, curr.yRight, curr.zRight);
+     }
+   }
+
+  //dots
+  //for (int i = 4038; i < 8606; i++) {
+  //  landmarks[i].displayLandmarksLeft(pg);
+  //  landmarks[i].displayLandmarksRight(pg);
+  //}
+
+  pg.endDraw();
+  pg.save("lines_red-blue.png");
+  println("Saved 4K image.");
+  saved = true;
+}
+
+
+// --- Load CSV hand data ---
+void loadData() {
+  leftHand = loadTable("dancers-edit-june-2-left_XYZ.csv", "header");
+  rightHand = loadTable("dancers-edit-june-2-right_XYZ.csv", "header");
+
+  int rowCount = leftHand.getRowCount();
+  landmarks = new Landmark[rowCount];
+
+  for (int i = 0; i < rowCount; i++) {
+    TableRow rowL = leftHand.getRow(i);
+    TableRow rowR = rightHand.getRow(i);
+
+    float xL = map(rowL.getFloat("x"), 0, 1779.0732, 0, 1)*3840;
+    float yL = map(rowL.getFloat("y"), -45.27002, 1133.1158, 0, 1)*2160;
+    float zL = map(rowL.getFloat("z"), -6, 7, -10, 10);
+
+    float xR = map(rowR.getFloat("x"), 0, 1878.7876, 0, 1)*3840;
+    float yR = map(rowR.getFloat("y"), 1.23737, 1095.5819, 0, 1)*2160;
+    float zR = map(rowR.getFloat("z"), -6, 6, -10, 10);
+
+    landmarks[i] = new Landmark(xL, yL, zL, xR, yR, zR);
+  }
+}
