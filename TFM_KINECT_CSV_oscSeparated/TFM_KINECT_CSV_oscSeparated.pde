@@ -200,9 +200,9 @@ void loadData() {
     zRArr[i] = rowR.getFloat("z");
   }
 
-  // Interpolate over 2 to 4 consecutive zeros
+  // Interpolate 1 to 4 consecutive zeros
   for (int i = 1; i < rowCount - 1; i++) {
-    for (int gap = 2; gap <= 4; gap++) {
+    for (int gap = 1; gap <= 4; gap++) {
       if (i + gap < rowCount) {
         boolean canInterpL = checkZeroBlock(xLArr, yLArr, zLArr, i, gap);
         boolean canInterpR = checkZeroBlock(xRArr, yRArr, zRArr, i, gap);
