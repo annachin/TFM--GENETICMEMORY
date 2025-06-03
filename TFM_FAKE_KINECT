@@ -1,0 +1,105 @@
+import oscP5.*;
+import netP5.*;
+
+Table leftHand, rightHand;
+
+// OSC variables
+OscP5 oscP5;
+NetAddress myRemoteLocation;
+String IPcomp = "192.168.0.2";  // target IP
+
+// Mouse-controlled hand positions
+float leftX = 0, leftY = 0, leftZ = 10;
+float rightX = 0, rightY = 0, rightZ = 10;
+
+// Hand detection toggle
+boolean handDetected;
+
+void setup() {
+  size(1920, 1080, P3D);
+  background(0);
+
+  // Init OSC
+  oscP5 = new OscP5(this, 8007);
+  myRemoteLocation = new NetAddress(IPcomp, 11112);
+}
+
+void draw() {
+  background(0);
+  fill(255, 0, 0);
+  textSize(50);
+  text(frameCount, 100, 100);
+  text("Hand Detected: " + handDetected, 100, 160);
+
+  // 3D box
+  pushMatrix();
+  translate(960, 540, 0);
+  noFill();
+  stroke(255);
+  strokeWeight(1);
+  box(1000);
+  popMatrix();
+
+  // If handDetected is true, update and draw hand positions based on mouse
+  if (handDetected) {
+    // Simulate left and right hand with small offset
+    leftX = mouseX - 50;
+    leftY = mouseY;
+    leftZ = 10;
+
+    rightX = mouseX + 50;
+    rightY = mouseY;
+    rightZ = 10;
+
+    drawHandSphere(leftX, leftY, leftZ);
+    drawHandSphere(rightX, rightY, rightZ);
+  }
+
+  // Send OSC every frame
+  sendCombinedOSC();
+}
+
+void sendCombinedOSC() {
+  // Send left hand
+  sendFloatOSC("/KinectHandLeftX", handDetected ? leftX : 0);
+  sendFloatOSC("/KinectHandLeftY", handDetected ? leftY : 0);
+  sendFloatOSC("/KinectHandLeftZ", handDetected ? leftZ : 5000);
+
+  // Send right hand
+  sendFloatOSC("/KinectHandRightX", handDetected ? rightX : 0);
+  sendFloatOSC("/KinectHandRightY", handDetected ? rightY : 0);
+  sendFloatOSC("/KinectHandRightZ", handDetected ? rightZ : 5000);
+
+  // Send detection status
+  sendFloatOSC("/KinectHandDetected", handDetected ? 1.0 : 0.0);
+
+  println("...................");
+  println("sending:");
+  println("Kinect L: " + leftX + ", " + leftY + ", " + leftZ);
+  println("Kinect R: " + rightX + ", " + rightY + ", " + rightZ);
+  println("Detection: " + handDetected);
+}
+
+void sendFloatOSC(String address, float val) {
+  if (Float.isNaN(val) || Float.isInfinite(val)) val = 0;
+  val = Float.parseFloat(nf(val, 1, 3));
+  OscMessage msg = new OscMessage(address);
+  msg.add(val);
+  oscP5.send(msg, myRemoteLocation);
+}
+
+void drawHandSphere(float x, float y, float z) {
+  pushMatrix();
+  translate(x, y, z);
+  stroke(255, 0, 0);
+  strokeWeight(10);
+  circle(0, 0, 10);
+  popMatrix();
+}
+
+// Toggle hand detection with space bar
+void keyPressed() {
+  if (key == ' ') {
+    handDetected = !handDetected;
+  }
+}
