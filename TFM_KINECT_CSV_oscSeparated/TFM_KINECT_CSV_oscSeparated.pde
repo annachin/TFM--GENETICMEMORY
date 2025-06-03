@@ -78,6 +78,7 @@ void draw() {
 
   //3D box
   pushMatrix();
+  noFill();
   translate(960, 540, 0);
   stroke(255);
   strokeWeight(1);
@@ -143,6 +144,10 @@ void sendCombinedOSC(Landmark current) {
   sendFloatOSC("/KinectHandRightX", rightX);
   sendFloatOSC("/KinectHandRightY", rightY);
   sendFloatOSC("/KinectHandRightZ", rightZ);
+  
+   // Hand Detection Status
+  boolean handDetected = (leftHandJoint != null || rightHandJoint != null);
+  sendFloatOSC("/KinectHandDetected", handDetected ? 1.0 : 0.0);
 
   println("...................");
   println("sending:");
@@ -150,6 +155,7 @@ void sendCombinedOSC(Landmark current) {
   println("CSV R: " + current.xRight + ", " + current.yRight + ", " + current.zRight);
   println("Kinect L: " + leftX + ", " + leftY + ", " + leftZ);
   println("Kinect R: " + rightX + ", " + rightY + ", " + rightZ);
+  println("Detection: " + handDetected);
 }
 
 
@@ -167,57 +173,85 @@ void sendFloatOSC(String address, float val) {
 
 // --- Load CSV hand data ---
 void loadData() {
-  leftHand = loadTable("track-most-recent-left_XYZ.csv", "header");
-  rightHand = loadTable("track-most-recent-right_XYZ.csv", "header");
+  leftHand = loadTable("dancers-edit-june-2-left_XYZ.csv", "header");
+  rightHand = loadTable("dancers-edit-june-2-right_XYZ.csv", "header");
 
   int rowCount = leftHand.getRowCount();
   landmarks = new Landmark[rowCount];
 
+  float[] xLArr = new float[rowCount];
+  float[] yLArr = new float[rowCount];
+  float[] zLArr = new float[rowCount];
+  float[] xRArr = new float[rowCount];
+  float[] yRArr = new float[rowCount];
+  float[] zRArr = new float[rowCount];
+
+  // Load raw data
   for (int i = 0; i < rowCount; i++) {
     TableRow rowL = leftHand.getRow(i);
     TableRow rowR = rightHand.getRow(i);
 
-    float xL = rowL.getFloat("x");
-    float yL = rowL.getFloat("y");
-    float zL = rowL.getFloat("z");
-    if (xL == 0 && yL == 0 && zL == 0) {
-      xL = 0;
-      yL = 0;
-      zL = 5000;
+    xLArr[i] = rowL.getFloat("x");
+    yLArr[i] = rowL.getFloat("y");
+    zLArr[i] = rowL.getFloat("z");
+
+    xRArr[i] = rowR.getFloat("x");
+    yRArr[i] = rowR.getFloat("y");
+    zRArr[i] = rowR.getFloat("z");
+  }
+
+  // Interpolate over 2 to 4 consecutive zeros
+  for (int i = 1; i < rowCount - 1; i++) {
+    for (int gap = 2; gap <= 4; gap++) {
+      if (i + gap < rowCount) {
+        boolean canInterpL = checkZeroBlock(xLArr, yLArr, zLArr, i, gap);
+        boolean canInterpR = checkZeroBlock(xRArr, yRArr, zRArr, i, gap);
+
+        if (canInterpL && !isZero(xLArr[i - 1], yLArr[i - 1], zLArr[i - 1]) &&
+            !isZero(xLArr[i + gap], yLArr[i + gap], zLArr[i + gap])) {
+          for (int j = 0; j < gap; j++) {
+            float t = (j + 1.0) / (gap + 1);
+            xLArr[i + j] = lerp(xLArr[i - 1], xLArr[i + gap], t);
+            yLArr[i + j] = lerp(yLArr[i - 1], yLArr[i + gap], t);
+            zLArr[i + j] = lerp(zLArr[i - 1], zLArr[i + gap], t);
+          }
+        }
+
+        if (canInterpR && !isZero(xRArr[i - 1], yRArr[i - 1], zRArr[i - 1]) &&
+            !isZero(xRArr[i + gap], yRArr[i + gap], zRArr[i + gap])) {
+          for (int j = 0; j < gap; j++) {
+            float t = (j + 1.0) / (gap + 1);
+            xRArr[i + j] = lerp(xRArr[i - 1], xRArr[i + gap], t);
+            yRArr[i + j] = lerp(yRArr[i - 1], yRArr[i + gap], t);
+            zRArr[i + j] = lerp(zRArr[i - 1], zRArr[i + gap], t);
+          }
+        }
+      }
     }
+  }
 
-    float xR = rowR.getFloat("x");
-    float yR = rowR.getFloat("y");
-    float zR = rowR.getFloat("z");
-    if (xR == 0 && yR == 0 && zR == 0) {
-      xR = 0;
-      yR = 0;
-      zR = 5000;
-    }
+  // Store final data into Landmark objects
+  for (int i = 0; i < rowCount; i++) {
+    float xL = xLArr[i], yL = yLArr[i], zL = zLArr[i];
+    if (isZero(xL, yL, zL)) zL = 5000;
 
-    // Smooth missing data
-    //if (xL == 0 && yL == 0 && zL == 0) {
-    //  xL = lastXL;
-    //  yL = lastYL;
-    //  zL = lastZL;
-    //} else {
-    //  lastXL = xL;
-    //  lastYL = yL;
-    //  lastZL = zL;
-    //}
-
-    //if (xR == 0 && yR == 0 && zR == 0) {
-    //  xR = lastXR;
-    //  yR = lastYR;
-    //  zR = lastZR;
-    //} else {
-    //  lastXR = xR;
-    //  lastYR = yR;
-    //  lastZR = zR;
-    //}
+    float xR = xRArr[i], yR = yRArr[i], zR = zRArr[i];
+    if (isZero(xR, yR, zR)) zR = 5000;
 
     landmarks[i] = new Landmark(xL, yL, zL, xR, yR, zR);
   }
+}
+
+// --- Helper Functions ---
+boolean isZero(float x, float y, float z) {
+  return x == 0 && y == 0 && z == 0;
+}
+
+boolean checkZeroBlock(float[] x, float[] y, float[] z, int start, int count) {
+  for (int i = 0; i < count; i++) {
+    if (!isZero(x[start + i], y[start + i], z[start + i])) return false;
+  }
+  return true;
 }
 
 // --- Draw hand spheres from Kinect data ---
