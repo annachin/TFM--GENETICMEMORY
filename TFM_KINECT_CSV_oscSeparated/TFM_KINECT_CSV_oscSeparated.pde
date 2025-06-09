@@ -1,6 +1,7 @@
 //draws points in a 3d space according to coordinates
 //landmarks are from the hand detection of dance videos
 //real time interaction is with kinect hand detection
+
 import KinectPV2.*;
 import KinectPV2.KJoint;
 
@@ -85,7 +86,7 @@ void draw() {
   box(1000);
   popMatrix();
 
-  //reset hanf joints
+  //reset hand joints
   leftHandJoint = null;
   rightHandJoint = null;
 
@@ -103,7 +104,7 @@ void draw() {
 
   if (leftHandJoint != null) drawHandSphere(leftHandJoint);
   if (rightHandJoint != null) drawHandSphere(rightHandJoint);
-}
+}//end draw
 
 void sendCombinedOSC(Landmark current) {
   // Send CSV hand data (already mapped)
@@ -156,7 +157,7 @@ void sendCombinedOSC(Landmark current) {
   println("Kinect L: " + leftX + ", " + leftY + ", " + leftZ);
   println("Kinect R: " + rightX + ", " + rightY + ", " + rightZ);
   println("Detection: " + handDetected);
-}
+}//end sendCombined
 
 
 void sendFloatOSC(String address, float val) {
@@ -169,7 +170,7 @@ void sendFloatOSC(String address, float val) {
   OscMessage msg = new OscMessage(address);
   msg.add(val);
   oscP5.send(msg, myRemoteLocation);
-}
+}//end sendFloatOSC
 
 // --- Load CSV hand data ---
 void loadData() {
@@ -200,9 +201,9 @@ void loadData() {
     zRArr[i] = rowR.getFloat("z");
   }
 
-  // Interpolate 1 to 4 consecutive zeros
+  // Interpolate over 2 to 4 consecutive zeros
   for (int i = 1; i < rowCount - 1; i++) {
-    for (int gap = 1; gap <= 4; gap++) {
+    for (int gap = 2; gap <= 4; gap++) {
       if (i + gap < rowCount) {
         boolean canInterpL = checkZeroBlock(xLArr, yLArr, zLArr, i, gap);
         boolean canInterpR = checkZeroBlock(xRArr, yRArr, zRArr, i, gap);
@@ -240,7 +241,7 @@ void loadData() {
 
     landmarks[i] = new Landmark(xL, yL, zL, xR, yR, zR);
   }
-}
+}//end loadData
 
 // --- Helper Functions ---
 boolean isZero(float x, float y, float z) {
@@ -254,7 +255,7 @@ boolean checkZeroBlock(float[] x, float[] y, float[] z, int start, int count) {
   return true;
 }
 
-// --- Draw hand spheres from Kinect data ---
+//draw spheres for kinect detection
 void drawHandSphere(KJoint joint) {
   pushMatrix();
   translate(joint.getX(), joint.getY(), joint.getZ());
